@@ -62,7 +62,6 @@ type
                       };
 
   E_ProcState: enum { P_M, P_S, P_I, P_E, -- stable states
-                      P_ID, -- invalid but still dirty
                       P_DT -- waiting for data cmd and tag cmd to arrive
                       };
 
@@ -102,6 +101,7 @@ type
     Record
       state: E_ProcState;
       val: Value;
+      dirty: boolean;
     End;
 
 ----------------------------------------------------------------------
@@ -529,7 +529,7 @@ Begin
   alias pv:Procs[p].val do
 
 -- Processor states
--- P_I, P_ID, P_DT, P_I_D, P_I_T, P_S, P_E, P_M
+-- P_I, P_DT, P_I_D, P_I_T, P_S, P_E, P_M
 -- Send(mtype, dst, src, vc, val, upgrade, replace, lruDirty, target, nextState)
 
   switch ps
@@ -539,20 +539,14 @@ Begin
         case TrCmd:
           --put "sending data cmd lce from P_I\n";
           Send(TagAndDataCmd, msg.target, p, VC1, pv, false, UNDEFINED, msg.nextState);
-          Send(LceDataRespNull, msg.src, p, VC2, pv, false, UNDEFINED, UNDEFINED);
+          if (Procs[p].dirty)
+          else
+            Send(LceDataResp, msg.src, p, VC2, pv, false, UNDEFINED, UNDEFINED);
+            Procs[p].dirty := false;
+          then
+            Send(LceDataRespNull, msg.src, p, VC2, pv, false, UNDEFINED, UNDEFINED);
+          endif;
           -- stay in invalid
-        else
-          ErrorUnhandledMsg(msg, p);
-      endswitch;
-
-    -- invalid, but still dirty (waiting for writeback)
-    case P_ID:
-      switch msg.mtype
-        case TrCmd:
-          --put "sending data cmd lce from P_ID\n";
-          Send(TagAndDataCmd, msg.target, p, VC1, pv, false, UNDEFINED, msg.nextState);
-          Send(LceDataResp, msg.src, p, VC2, pv, false, UNDEFINED, UNDEFINED);
-          ps := P_I;
         else
           ErrorUnhandledMsg(msg, p);
       endswitch;
@@ -611,7 +605,7 @@ Begin
         --put "sending inv tag ack from P_M\n";
         Send(InvTagAck, msg.src, p, VC2, UNDEFINED, false, UNDEFINED, UNDEFINED);
         -- block is dirty, go to invalid dirty state
-        ps := P_ID;
+        ps := P_I;
       else
         ErrorUnhandledMsg(msg, p);
     endswitch;
@@ -633,7 +627,7 @@ End;
 ----------------------------------------------------------------------
 
 -- Processor states
--- P_M, P_S, P_I, P_E, P_DT, P_ID
+-- P_M, P_S, P_I, P_E, P_DT
 
 -- Processor actions (affecting coherency)
 ruleset n:Proc do
@@ -649,6 +643,7 @@ ruleset n:Proc do
       p.val := v;
       LastWrite := v;  --We use LastWrite to sanity check that reads receive the value of the last write
       --put "storing value := "; put v; put " by proc "; put n; put "\n";
+      p.dirty := true;
     endrule;
     endruleset;
 
@@ -660,6 +655,7 @@ ruleset n:Proc do
       LastWrite := v;  --We use LastWrite to sanity check that reads receive the value of the last write
       p.state := P_M;
       --put "storing value := "; put v; put " by proc "; put n; put "\n";
+      p.dirty := true;
     endrule;
     endruleset;
 
@@ -667,7 +663,7 @@ ruleset n:Proc do
     -- load or stores with no replacement
     ---------------------------------------------------------------
     rule "read request"
-      (p.state = P_I)
+      (p.state = P_I & p.dirty = false)
         ==>
       --put "LceRdReq from Proc "; put n; put " in state "; put p.state;
       Send(LceRdReq, HomeType, n, VC0, UNDEFINED, false, UNDEFINED, UNDEFINED);
@@ -675,7 +671,7 @@ ruleset n:Proc do
     endrule;
 
     rule "write request"
-      (p.state = P_I)
+      (p.state = P_I & p.dirty = false)
         ==>
       --put "LceWrReq from Proc "; put n; put " in state "; put p.state;
       Send(LceWrReq, HomeType, n, VC0, UNDEFINED, false, UNDEFINED, UNDEFINED);
@@ -774,6 +770,7 @@ startstate
   for i:Proc do
     Procs[i].state := P_I;
     undefine Procs[i].val;
+    Procs[i].dirty := false;
   endfor;
 
   -- network initialization
@@ -816,7 +813,7 @@ invariant "Home in Shared state implies Proc in Invalid or Shared"
     HomeNode.state = H_S
       ->
       (Procs[n].state = P_S |  Procs[n].state = P_I
-       | Procs[n].state = P_DT | Procs[n].state = P_ID)
+       | Procs[n].state = P_DT)
   end;
 
 invariant "Values in shared state must match last write"
@@ -840,7 +837,7 @@ invariant "Exclusive has a clean copy of data"
   Forall n : Proc do
     HomeNode.state = H_E & Procs[n].state = P_E
       ->
-    HomeNode.val = Procs[n].val
+    (HomeNode.val = Procs[n].val & Procs[n].dirty = false)
   end;
 
 --TODO: is there any variation of these rules that hold true?
