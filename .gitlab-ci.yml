@@ -21,14 +21,13 @@ stages:
 #    - exit 1 
 
 .job_template: &job_definition
-  only:
-    - master
-    - dev
-    - fe_dev
-    - be_dev
-    - me_dev
-    - top_dev
-    - sw_dev
+  rules:
+    - if: '$CI_COMMIT_REF_NAME =~ /master/'
+      when: always
+    - if: '$CI_COMMIT_REF_NAME =~ /dev/'
+      when: always
+    - if: '$CI_COMMIT_REF_NAME =~ /^.*dev$/'
+      when: always
   before_script:
     - echo "Updating libraries"
     - make update_libs
@@ -49,12 +48,32 @@ cache: &global_cache
     - $CI_PROJECT_DIR/external/
   policy: pull
 
-update-cache: &update-cache-manual
-  <<: *job_definition
-  when: manual
+update-cache:
   stage: prereq
   tags:
     - bsg
+  rules:
+    - if: '$CI_COMMIT_REF_NAME =~ /master/'
+      changes:
+        - Makefile
+        - Makefile.common
+        - bp_common/test/*
+        - external/*
+      when: always
+    - if: '$CI_COMMIT_REF_NAME =~ /dev/'
+      changes:
+        - Makefile
+        - Makefile.common
+        - bp_common/test/*
+        - external/*
+      when: always
+    - if: '$CI_COMMIT_REF_NAME =~ /^.*dev$/'
+      changes:
+        - Makefile
+        - Makefile.common
+        - bp_common/test/*
+        - external/*
+      when: always
   script:
     - git submodule deinit -f .
     - git clean -fdx
@@ -70,20 +89,11 @@ update-cache: &update-cache-manual
       - $CI_PROJECT_DIR/bp_common/test/mem/
     policy: push
 
-update-cache-auto:
-    <<: *update-cache-manual
-    when: always
-    only:
-      changes:
-        - Makefile
-        - Makefile.common
-        - bp_common/test/*
-        - external/*
-
 hotfix_job:
   <<: *job_definition
-  only:
-    - /^.*hotfix.*$/
+  rules:
+    - if: "$CI_COMMIT_REF_NAME =~ /^.*hotfix.*$/"
+      when: always
   stage: check
   tags:
     - bsg
@@ -94,7 +104,9 @@ hotfix_job:
 
 clean_build:
   <<: *job_definition
-  when: manual
+  rules:
+    - if: 1
+    when: manual
   stage: prereq
   tags:
     - bsg
