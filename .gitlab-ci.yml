@@ -49,12 +49,20 @@ cache: &global_cache
     - $CI_PROJECT_DIR/external/
   policy: pull
 
-update-cache: &update-cache-manual
-  <<: *job_definition
-  when: manual
+update-cache:
   stage: prereq
   tags:
     - bsg
+  rules:
+    - if: '$CI_COMMIT_REF_NAME != master && $CI_COMMIT_REF_NAME != dev && $CI_COMMIT_REF_NAME != fe_dev && $CI_COMMIT_REF_NAME != be_dev && $CI_COMMIT_REF_NAME != me_dev && $CI_COMMIT_REF_NAME != top_dev && $CI_COMMIT_REF_NAME != sw_dev'
+      when: never
+    - changes:
+      - Makefile
+      - Makefile.common
+      - bp_common/test/*
+      - external/*
+      when: always
+    - when: manual
   script:
     - git submodule deinit -f .
     - git clean -fdx
@@ -69,16 +77,10 @@ update-cache: &update-cache-manual
       - $CI_PROJECT_DIR/external/
       - $CI_PROJECT_DIR/bp_common/test/mem/
     policy: push
-
-update-cache-auto:
-    <<: *update-cache-manual
+  artifacts:
     when: always
-    only:
-      changes:
-        - Makefile
-        - Makefile.common
-        - bp_common/test/*
-        - external/*
+    paths:
+      - "*.log"
 
 hotfix_job:
   <<: *job_definition
