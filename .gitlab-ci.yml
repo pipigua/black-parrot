@@ -29,7 +29,6 @@ stages:
     - me_dev
     - top_dev
     - sw_dev
-    - test_dev_asdf
   before_script:
     - echo "Updating libraries"
     - make update_libs
