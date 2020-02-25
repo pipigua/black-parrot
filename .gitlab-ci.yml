@@ -56,6 +56,7 @@ update-cache: &update-cache-manual
   tags:
     - bsg
   script:
+    - if ! [ "$CI_COMMIT_REF_NAME" ~= 'master|*dev*' ]; then exit
     - git submodule deinit -f .
     - git clean -fdx
     - git submodule sync
