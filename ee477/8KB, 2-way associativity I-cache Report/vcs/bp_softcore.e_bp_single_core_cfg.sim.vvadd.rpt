@@ -1,0 +1,10 @@
+[CORE0 FSH] PASS
+[CORE0 STATS]
+	clk   :                15504
+	instr :                 6752
+	fe_nop:                    0
+	be_nop:                    0
+	me_nop:                    0
+	poison:                 7324
+	roll  :                  933
+	mIPC  :                  435

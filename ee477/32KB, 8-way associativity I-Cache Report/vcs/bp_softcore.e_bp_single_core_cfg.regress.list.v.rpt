@@ -1,0 +1,78 @@
+bs
+==========
+[CORE0 FSH] PASS
+[CORE0 STATS]
+	clk   :                 1214
+	instr :                  431
+	fe_nop:                    0
+	be_nop:                    0
+	me_nop:                    0
+	poison:                  694
+	roll  :                   15
+	mIPC  :                  355
+
+fibcall
+==========
+[CORE0 FSH] PASS
+[CORE0 STATS]
+	clk   :                 2655
+	instr :                 1151
+	fe_nop:                    0
+	be_nop:                    0
+	me_nop:                    0
+	poison:                 1221
+	roll  :                    9
+	mIPC  :                  433
+
+median
+==========
+[CORE0 FSH] PASS
+[CORE0 STATS]
+	clk   :                22074
+	instr :                 9068
+	fe_nop:                    0
+	be_nop:                    0
+	me_nop:                    0
+	poison:                10743
+	roll  :                  240
+	mIPC  :                  410
+
+rv64ui-p-blt
+==========
+[CORE0 FSH] PASS
+[CORE0 STATS]
+	clk   :                  932
+	instr :                  268
+	fe_nop:                    0
+	be_nop:                    0
+	me_nop:                    0
+	poison:                  628
+	roll  :                    0
+	mIPC  :                  287
+
+towers
+==========
+[CORE0 FSH] PASS
+[CORE0 STATS]
+	clk   :                16708
+	instr :                12470
+	fe_nop:                    0
+	be_nop:                    0
+	me_nop:                    0
+	poison:                 3745
+	roll  :                   42
+	mIPC  :                  746
+
+vvadd
+==========
+[CORE0 FSH] PASS
+[CORE0 STATS]
+	clk   :                 9303
+	instr :                 6874
+	fe_nop:                    0
+	be_nop:                    0
+	me_nop:                    0
+	poison:                 2046
+	roll  :                  240
+	mIPC  :                  738
+
